@@ -50,7 +50,7 @@ async function setVaultToken() {
   const Vault = require('hashi-vault-js')
   const vaultConfig = require('../../../../configs/vaultConfig').default
   const vault = new Vault(vaultConfig)
-  // Only request new vault token if not already retrieved or older than 4 hours 
+  // Only request new vault token if not already retrieved or older than 4 hours
   if (
     !process.env.VAULT_TOKEN ||
     (process.env.VAULT_TOKEN &&
@@ -58,13 +58,23 @@ async function setVaultToken() {
         parseInt(process.env.TOKEN_LAST_RETRIEVED) >=
         14400)
   ) {
-    const readlineSync = require('readline-sync')
-    const userName = readlineSync.question('Enter LDAP username: ')
-    const passwd =readlineSync.question('Enter LDAP password: ')
-    const token = await vault.loginWithLdap(userName, passwd)
-    process.env.VAULT_TOKEN= token.client_token
-    process.env.TOKEN_LAST_RETRIEVED = `${(new Date().getTime() / 1000)}`
-}
+    let attempts = 0
+    //Give user 3 attempts to successfully get Vault Token
+    while (attempts < 3) {
+      try {
+        const readlineSync = require('readline-sync')
+        const userName = readlineSync.question('Enter LDAP username: ')
+        const passwd = readlineSync.question('Enter LDAP password: ')
+        const token = await vault.loginWithLdap(userName, passwd)
+        process.env.VAULT_TOKEN = token.client_token
+        process.env.TOKEN_LAST_RETRIEVED = `${new Date().getTime() / 1000}`
+        break
+      } catch (e) {
+        console.log('Invalid credentials')
+        attempts++
+      }
+    }
+  }
 }
 
 BeforeAll(async function () {
