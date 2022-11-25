@@ -1,14 +1,23 @@
 #!/usr/bin/env node
 
 // tslint:disable:no-console
-const fs = require('fs-extra')
-const chalk = require('chalk')
-const clear = require('clear')
-const figlet = require('figlet')
-const path = require('path')
-const program = require('commander')
 
-const pkg = require('../../package.json')
+import fs from 'fs-extra'
+import chalk from 'chalk'
+import clear from 'clear'
+import figlet from 'figlet'
+import path from 'path'
+import program from 'commander'
+
+//const fs = require('fs-extra')
+//const chalk = require('chalk')
+// const clear = require('clear')
+// const figlet = require('figlet')
+// const path = require('path')
+// const program = require('commander')
+
+import * as pkg from '../../package.json'
+//const pkg = require('../../package.json')
 
 clear()
 console.log(
