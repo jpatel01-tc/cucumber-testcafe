@@ -1,14 +1,12 @@
 import { After, BeforeAll, AfterAll, setDefaultTimeout, Status } from 'cucumber'
 import { existsSync, unlinkSync, writeFileSync } from 'fs'
 import { testControllerHolder } from './test-controller-holder'
-import { browser } from './world'
-import { ClientFunction } from 'testcafe'
+import {ClientFunction} from 'testcafe'
+import createTestCafe from 'testcafe'
 import { RESOLUTIONS} from '../../../../shared/configs/resolutionsEnum.js'
-// tslint:disable-next-line
-const testCafe = require('testcafe')
 
+let testCafe = null
 let attachScreenshotToReport = null
-let cafeRunner = null
 
 const TIMEOUT = +process.env.CUCUMBER_TIMEOUT || 30000
 const RUNNER_FILE = `${process.env.CUCUMBER_CWD}/test/${process.env.CUCUMBER_SLAVE_ID}_runner.js`
@@ -23,32 +21,28 @@ function createTestFile() {
 }
 
 function runTest(browser) {
-  let runner
-
-  return testCafe('localhost').then(function(tc: any) {
-    cafeRunner = tc
-    runner = cafeRunner.createRunner()
-
-    return runner
-      .src(RUNNER_FILE)
-      .screenshots({
-        path: `${process.env.CUCUMBER_REPORTS}/screenshots/`,
-        takeOnFails: true
-      })
-      .browsers(browser || 'chrome')
-      .run({
-        skipJsErrors: true,
-        selectorTimeout: TIMEOUT / 2,
-        assertionTimeout: TIMEOUT * 0.9
-      })
-  })
+ //let runner
+(async ()=>{
+ testCafe = await createTestCafe('localhost')
+ return testCafe.createRunner()
+ .src(RUNNER_FILE)
+ .screenshots({
+   path: `${process.env.CUCUMBER_REPORTS}/screenshots/`,
+   takeOnFails: true
+ })
+ .browsers(browser || 'chrome')
+ .run(/*{
+   skipJsErrors: true,
+   selectorTimeout: TIMEOUT / 2,
+   assertionTimeout: TIMEOUT * 0.9
+}*/)})()
 }
 
 setDefaultTimeout(TIMEOUT)
 
 BeforeAll(async function() {
   createTestFile()
-  runTest(process.env.CUCUMBER_BROWSER || this.parameters.browser)
+  const run = runTest(process.env.CUCUMBER_BROWSER || this.parameters.browser)
   const testController =  await testControllerHolder.get()
   if (process.env.RESOLUTION != 'undefined'){
     const {height,width} = JSON.parse(RESOLUTIONS[process.env.RESOLUTION])
@@ -71,19 +65,20 @@ export function resetBrowser(t) {
 
 After(async function(testCase) {
   const world = this
+  const testController = await world.waitForTestController
   if (testCase.result.status === Status.FAILED) {
   attachScreenshotToReport = world.attachScreenshotToReport
-    await addErrorToController(browser)
-    await ifErrorTakeScreenshot(browser)
+    await addErrorToController(testController)
+    await ifErrorTakeScreenshot(testController)
   }
 
-  return testControllerHolder.get().then(resetBrowser)
+  return resetBrowser(testController)
 })
 
 AfterAll(async function() {
   if (existsSync(RUNNER_FILE)) unlinkSync(RUNNER_FILE)
   await testControllerHolder.free()
-  return cafeRunner.close()
+  return testCafe.close()
 })
 
 const getAttachScreenshotToReport = path => {
