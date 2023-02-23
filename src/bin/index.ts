@@ -1,13 +1,16 @@
 #!/usr/bin/env node
 
 // tslint:disable:no-console
+
+
+import {loadConfiguration, runCucumber} from '@cucumber/cucumber/api'
+
 const fs = require('fs-extra')
 const chalk = require('chalk')
 const clear = require('clear')
 const figlet = require('figlet')
 const path = require('path')
 const program = require('commander')
-
 const pkg = require('../../package.json')
 
 clear()
@@ -90,38 +93,30 @@ program
     }
   })
 
+
 program
   .command('run')
   .description('Runs all detected gherkin specs')
-  .action(function () {
+  .action(async function () {
     process.env.CUCUMBER_CWD = process.env.CUCUMBER_CWD || process.cwd()
     const profile = require('../lib/profile-loader')
-    const cucumber = require('cucumber')
-    const cli = new cucumber.Cli({
-      argv: [null, __filename, ...profile],
-      cwd: process.env.CUCUMBER_CWD,
-      stdout: process.stdout,
-    })
-
-    return cli
-      .run()
-      .then((response) => {
+    const clientPkgJSON = require( `${process.env.CUCUMBER_CWD}/package.json`)
+    const { runConfiguration } = await loadConfiguration({file:clientPkgJSON.cucumber_profiles,profiles:[process.env.CUCUMBER_PROFILE]},{cwd:process.env.CUCUMBER_CWD})
+    const { success } = await runCucumber(runConfiguration)   
+     
         if (process.env.CUCUMBER_HTML !== 'false') {
-          try {
-            require('../reports/cucumber-multi-html.config')
-          } catch (error) {
-            console.warn('Could not generate cucumber html report', error)
-          }
-        }
-        if (!response.success) {
-          process.exit(1)
-        }
-        return response
-      })
-      .catch((e) => {
-        console.log(e)
+           try {
+             require('../reports/cucumber-multi-html.config')
+           } catch (error) {
+             console.warn('Could not generate cucumber html report', error)
+           }
+         }
+       if (!success) {
+       return success
         process.exit(1)
-      })
+         }
+    
   })
 
-program.parse(process.argv)
+  program.parse(process.argv)
+
