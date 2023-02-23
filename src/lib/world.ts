@@ -32,7 +32,7 @@ class CustomWorld extends CucumberAllureWorld {
      const imageConvertForCuc = imgInBase64.substring(
        imgInBase64.indexOf(',') + 1
      )
-    return this.attach(pathToScreenshot, 'image/png')
+    return this.attach(imageConvertForCuc, 'image/png')
   }
 }
 
