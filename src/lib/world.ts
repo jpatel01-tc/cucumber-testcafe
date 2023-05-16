@@ -2,7 +2,7 @@ import { base64Sync } from 'base64-img'
 import { setWorldConstructor } from '@cucumber/cucumber'
 import { testControllerHolder } from './test-controller-holder'
 import { CucumberAllureWorld } from "allure-cucumberjs"
-
+import fs from 'fs'
 let { RPWorld } = require('@reportportal/agent-js-cucumber')
 export interface TestControllerWithTestRun extends TestController {
   executionChain?: any
@@ -28,11 +28,8 @@ class CustomWorld extends CucumberAllureWorld {
     })
 
   attachScreenshotToReport = (pathToScreenshot) => {
-    const imgInBase64 = base64Sync(pathToScreenshot)
-     const imageConvertForCuc = imgInBase64.substring(
-       imgInBase64.indexOf(',') + 1
-     )
-    return this.attach(imageConvertForCuc, 'image/png')
+    const img = fs.readFileSync(pathToScreenshot)
+    return this.attach(img, 'image/png')
   }
 }
 
